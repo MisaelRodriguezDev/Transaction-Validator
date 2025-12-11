@@ -74,11 +74,11 @@ jobs:
         if: ${{ success() }}
         env:
           RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
-        run: bash -l ./scripts/deploy.sh
+        run: bash ./scripts/deploy.sh
 
       # 11. Rollback in case of test failure
       - name: Rollback Render
         if: ${{ failure() }}
         env:
           RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
-        run: bash -l ./scripts/rollback.sh
+        run: bash ./scripts/rollback.sh
