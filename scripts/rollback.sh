@@ -14,7 +14,7 @@ then
     export PATH=$HOME/.render/bin:$PATH
 fi
 
-SERVICE_ID="<SERVICE-ID>"
+SERVICE_ID="srv-d4t0k6hr0fns73e89iog"
 PREVIOUS_IMAGE_TAG="previous"
 
 echo "Haciendo rollback en Render..."

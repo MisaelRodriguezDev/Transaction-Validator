@@ -6,7 +6,7 @@ if [ -z "$RENDER_API_KEY" ]; then
   exit 1
 fi
 
-SERVICE_ID="<SERVICE-ID>"
+SERVICE_ID="srv-d4t0k6hr0fns73e89iog"
 
 echo "Desplegando en Render..."
 render services update $SERVICE_ID \
