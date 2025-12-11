@@ -58,9 +58,12 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GHCR_PAT }}
 
-      # 8. Install Render CLI via npm
+      # 8. Install Render CLI
       - name: Install Render CLI
-        run: npm install -g @render/cli
+        run: |
+          curl -sL https://cli.render.com/install | bash
+          export PATH=$HOME/.render/bin:$PATH
+          echo "$HOME/.render/bin" >> $GITHUB_PATH
 
       # 9. Build Docker image
       - name: Build Docker image
