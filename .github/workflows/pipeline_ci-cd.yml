@@ -62,6 +62,7 @@ jobs:
       - name: Install Render CLI
         run: |
           curl -sL https://cli.render.com/install | bash
+          export PATH=$HOME/.render/bin:$PATH
           echo "$HOME/.render/bin" >> $GITHUB_PATH
 
       # 9. Build Docker image
