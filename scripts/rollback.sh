@@ -9,15 +9,6 @@ fi
 SERVICE_ID="srv-d4t0k6hr0fns73e89iog"
 PREVIOUS_IMAGE_TAG="previous"
 
-# Instalar Render CLI si no está
-if ! command -v render &> /dev/null
-then
-    echo "Instalando Render CLI..."
-    curl -sL https://cli.render.com/install | bash
-    export PATH=$HOME/.render/bin:$PATH
-fi
-
-echo "PATH actual: $PATH"
 echo "Haciendo rollback en Render..."
 render services update $SERVICE_ID \
   --image ghcr.io/misaelrodriguezdev/transaction-validator:$PREVIOUS_IMAGE_TAG

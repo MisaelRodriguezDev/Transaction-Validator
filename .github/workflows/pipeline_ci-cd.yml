@@ -36,8 +36,7 @@ jobs:
       # 4. Run tests
       - name: Run tests
         id: tests
-        run: |
-          npm test
+        run: npm test
 
       # 5. Upload coverage report
       - name: Upload coverage
@@ -59,19 +58,25 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GHCR_PAT }}
 
-      # 8. Build Docker image
+      # 8. Install Render CLI
+      - name: Install Render CLI
+        run: |
+          curl -sL https://cli.render.com/install | bash
+          echo "$HOME/.render/bin" >> $GITHUB_PATH
+
+      # 9. Build Docker image
       - name: Build Docker image
         if: ${{ success() }}
         run: bash ./scripts/build.sh
 
-      # 9. Deploy to Render
+      # 10. Deploy to Render
       - name: Deploy to Render
         if: ${{ success() }}
         env:
           RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
         run: bash ./scripts/deploy.sh
 
-      # 10. Rollback in case of test failure
+      # 11. Rollback in case of test failure
       - name: Rollback Render
         if: ${{ failure() }}
         env:

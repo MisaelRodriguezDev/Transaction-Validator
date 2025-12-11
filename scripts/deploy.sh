@@ -10,4 +10,4 @@ SERVICE_ID="srv-d4t0k6hr0fns73e89iog"
 
 echo "Desplegando en Render..."
 render services update $SERVICE_ID \
-  --image ghcr.io/$GITHUB_REPOSITORY_OWNER/transaction-validator:latest
+  --image ghcr.io/misaelrodriguezdev/transaction-validator:latest
