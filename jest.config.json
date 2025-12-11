@@ -1,0 +1,6 @@
+{
+  "testEnvironment": "node",
+  "setupFilesAfterEnv": [],
+  "verbose": true,
+  "forceExit": true
+}

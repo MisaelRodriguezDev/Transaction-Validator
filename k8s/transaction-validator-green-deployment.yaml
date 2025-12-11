@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: transaction-validator-green
+  labels:
+    app: transaction-validator
+    version: green
+spec:
+  replicas: 0   # inicialmente apagado
+  selector:
+    matchLabels:
+      app: transaction-validator
+      version: green
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: transaction-validator
+        version: green
+    spec:
+      containers:
+      - name: transaction-validator
+        image: transaction-validator-green:latest
+        args: ["npm","start"]
+        imagePullPolicy: Never
+
+        env:
+          - name: NODE_ENV
+            value: production
+          - name: PORT
+            value: "3000"
+        ports:
+          - containerPort: 3000
+        volumeMounts:
+          - mountPath: /app/logs
+            name: transaction-validator-green-logs
+      restartPolicy: Always
+      volumes:
+        - name: transaction-validator-green-logs
+          persistentVolumeClaim:
+            claimName: transaction-validator-green-logs-pvc

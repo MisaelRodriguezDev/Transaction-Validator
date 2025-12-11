@@ -1,99 +1,89 @@
 //@ts-nocheck
-
 const logger = require('../utils/logger');
 
 class TransactionService {
   constructor() {
-    this.validationRules = this.loadValidationRules();
+    this.validationRules = null;
   }
-  
-  // Simula carga lenta de reglas
-  loadValidationRules() {
-    logger.warn('Loading validation rules (slow operation)...');
-    // Simula carga pesada
-    const start = Date.now();
-    const rules = {
+
+  // Carga simulada de reglas (lazy-loading)
+  async loadValidationRules() {
+    if (this.validationRules) return this.validationRules;
+
+    logger.warn('Loading validation rules...');
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    this.validationRules = {
       maxAmount: 10000,
       minAmount: 0.01,
       allowedCurrencies: ['MXN', 'USD'],
       maxTransactionsPerHour: 10,
       blacklistedMerchants: ['FRAUDULENT_CO', 'TEST_MERCHANT']
     };
-    
-    // Simula delay en carga
-    const end = start + 500; // 500ms de delay
-    while (Date.now() < end) {}
-    
+
     logger.info('Validation rules loaded');
-    return rules;
+    return this.validationRules;
   }
-  
+
+  async ensureRulesLoaded() {
+    if (!this.validationRules) await this.loadValidationRules();
+  }
+
+  // Validación principal
   async validate(transaction) {
     const startTime = Date.now();
-    
-    // Validaciones básicas
-    if (!transaction.id) {
-      throw new Error('Transaction ID is required');
+    await this.ensureRulesLoaded();
+
+    try {
+      const basicResult = this.basicValidation(transaction);
+      if (!basicResult.isValid) return this.buildResult(transaction.id, false, basicResult.reason, startTime);
+
+      if (await this.checkFraud(transaction)) {
+        return this.buildResult(transaction.id, false, 'Potential fraudulent transaction', startTime);
+      }
+
+      await this.simulateDatabaseQuery();
+
+      return this.buildResult(transaction.id, true, null, startTime);
+    } catch (error) {
+      logger.error('Validation error', { transactionId: transaction.id, error: error.message });
+      return this.buildResult(transaction.id, false, `Internal error: ${error.message}`, startTime);
     }
-    
-    if (!transaction.amount || transaction.amount <= 0) {
-      return {
-        transactionId: transaction.id,
-        isValid: false,
-        reason: 'Invalid amount',
-        validationTime: Date.now() - startTime
-      };
+  }
+
+  basicValidation(transaction) {
+    if (!transaction.id) return { isValid: false, reason: 'Transaction ID is required' };
+    if (!transaction.amount || transaction.amount <= 0) return { isValid: false, reason: 'Invalid amount' };
+    if (transaction.amount < this.validationRules.minAmount) return { isValid: false, reason: 'Amount below minimum' };
+    if (transaction.amount > this.validationRules.maxAmount) return { isValid: false, reason: 'Amount exceeds maximum limit' };
+    if (!this.validationRules.allowedCurrencies.includes(transaction.currency)) {
+      return { isValid: false, reason: `Currency ${transaction.currency} not allowed` };
     }
-    
-    if (transaction.amount > this.validationRules.maxAmount) {
-      return {
-        transactionId: transaction.id,
-        isValid: false,
-        reason: 'Amount exceeds maximum limit',
-        validationTime: Date.now() - startTime
-      };
+    if (this.validationRules.blacklistedMerchants.includes(transaction.merchant)) {
+      return { isValid: false, reason: 'Merchant is blacklisted' };
     }
-    
-    // Simula validación de fraude (operación pesada)
-    const isFraudulent = await this.checkFraud(transaction);
-    if (isFraudulent) {
-      return {
-        transactionId: transaction.id,
-        isValid: false,
-        reason: 'Potential fraudulent transaction',
-        validationTime: Date.now() - startTime
-      };
-    }
-    
-    // Simula conexión lenta a base de datos
-    await this.simulateDatabaseQuery();
-    
+    return { isValid: true };
+  }
+
+  async checkFraud(transaction) {
+    await new Promise(resolve => setTimeout(resolve, 50)); // más rápido
+    return Math.random() < 0.01; // 1% fraude
+  }
+
+  async simulateDatabaseQuery() {
+    const delay = Math.random() * 200 + 50; // 50-250ms
+    await new Promise(resolve => setTimeout(resolve, delay));
+    if (Math.random() < 0.002) throw new Error('Database timeout'); // menor probabilidad
+  }
+
+  buildResult(id, isValid, reason, startTime) {
     return {
-      transactionId: transaction.id,
-      isValid: true,
+      transactionId: id,
+      isValid,
+      reason: reason || undefined,
       validationTime: Date.now() - startTime,
       timestamp: new Date().toISOString()
     };
-  }
-  
-  async checkFraud(transaction) {
-    // Simula análisis de fraude complejo
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
-    // 1% de probabilidad de marcar como fraude
-    return Math.random() < 0.01;
-  }
-  
-  async simulateDatabaseQuery() {
-    // Simula query lenta a base de datos
-    const delay = Math.random() * 300 + 100; // 100-400ms
-    await new Promise(resolve => setTimeout(resolve, delay));
-    
-    // Simula timeout ocasional
-    if (Math.random() < 0.005) {
-      await new Promise(resolve => setTimeout(resolve, 5000));
-      throw new Error('Database timeout');
-    }
   }
 }
 

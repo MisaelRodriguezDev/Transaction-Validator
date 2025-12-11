@@ -5,51 +5,29 @@ const logger = require('../utils/logger');
 exports.validateTransaction = async (req, res, next) => {
   try {
     const transaction = req.body;
-    
-    // Log entrada
-    logger.info('Validating transaction', {
-      transactionId: transaction.id,
-      amount: transaction.amount,
-      timestamp: new Date().toISOString()
-    });
-    
-    // Simula procesamiento con problemas
-    await new Promise(resolve => {
-      setTimeout(resolve, Math.random() * 1000); // Latencia variable
-    });
-    
-    // Simula errores 500 (0.8% de probabilidad)
-    if (Math.random() < 0.008) {
-      logger.error('Simulated 500 error in transaction validation');
-      throw new Error('Internal server error simulation');
+
+    if (!transaction || !transaction.id) {
+      return res.status(400).json({
+        success: false,
+        error: 'Bad Request',
+        message: 'Transaction payload must include an id'
+      });
     }
-    
+
+    logger.info('Validating transaction', { transactionId: transaction.id, amount: transaction.amount });
+
     const validationResult = await transactionService.validate(transaction);
-    
-    // Log exitoso
+
     logger.info('Transaction validation completed', {
       transactionId: transaction.id,
       isValid: validationResult.isValid,
       validationTime: validationResult.validationTime
     });
-    
-    res.status(200).json(validationResult);
-    
+
+    res.status(200).json({ success: true, data: validationResult });
+
   } catch (error) {
-    logger.error('Transaction validation failed', {
-      error: error.message,
-      stack: error.stack,
-      transaction: req.body
-    });
-    
-    // Si es un error simulado, devuelve 500
-    if (error.message === 'Internal server error simulation') {
-      return res.status(500).json({
-        error: 'Internal Server Error',
-        message: 'Transaction validation service unavailable'
-      });
-    }
-    
+    logger.error('Transaction validation failed', { transaction: req.body, message: error.message, stack: error.stack });
     next(error);
   }
 };
@@ -57,25 +35,24 @@ exports.validateTransaction = async (req, res, next) => {
 exports.batchValidate = async (req, res, next) => {
   try {
     const transactions = req.body.transactions;
-    
-    if (!Array.isArray(transactions) || transactions.length > 100) {
+    if (!Array.isArray(transactions) || transactions.length === 0 || transactions.length > 100) {
       return res.status(400).json({
+        success: false,
         error: 'Bad Request',
-        message: 'Transactions must be an array with max 100 items'
+        message: 'Transactions must be an array with 1-100 items'
       });
     }
-    
-    // Problema: Procesamiento secuencial en lugar de paralelo
-    const results = [];
-    for (let i = 0; i < transactions.length; i++) {
-      const result = await transactionService.validate(transactions[i]);
-      results.push(result);
-    }
-    
-    res.status(200).json({ results });
-    
+
+    const results = await Promise.all(transactions.map(tx => transactionService.validate(tx)));
+
+    logger.info('Batch validation completed', {
+      total: transactions.length,
+      validCount: results.filter(r => r.isValid).length
+    });
+
+    res.status(200).json({ success: true, results });
   } catch (error) {
-    logger.error('Batch validation failed', error);
+    logger.error('Batch validation failed', { message: error.message, stack: error.stack });
     next(error);
   }
 };

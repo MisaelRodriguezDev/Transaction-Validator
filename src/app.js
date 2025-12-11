@@ -11,52 +11,78 @@ const transactionRoutes = require('./routes/transactionRoutes');
 
 const app = express();
 
-// Security middleware
+// -------------------------------
+// SECURITY & PARSING
+// -------------------------------
 app.use(helmet());
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '1mb' })); // Limitar tamaño de payload
 
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
-  message: 'Too many requests from this IP'
-});
-app.use('/api', limiter);
+// -------------------------------
+// RATE LIMITING
+// -------------------------------
+if (process.env.NODE_ENV !== 'development') {
 
-// Metrics endpoint
+  const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutos
+    max: 100, // 100 requests por IP
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many requests from this IP, please try again later.' }
+  });
+  app.use('/api', apiLimiter);
+}
+
+// -------------------------------
+// METRICS
+// -------------------------------
 setupMetrics(app);
+app.use(metricsMiddleware);
 
-// Logging middleware
+// -------------------------------
+// LOGGING MIDDLEWARE
+// -------------------------------
 app.use((req, res, next) => {
-  logger.info(`${req.method} ${req.url}`, {
+  logger.info('Incoming request', {
+    method: req.method,
+    url: req.originalUrl,
     ip: req.ip,
-    userAgent: req.get('User-Agent')
+    userAgent: req.get('User-Agent'),
+    timestamp: new Date().toISOString()
   });
   next();
 });
 
-// Routes
+// -------------------------------
+// ROUTES
+// -------------------------------
 app.use('/api/v1/transactions', transactionRoutes);
 
-// Metrics middleware
-app.use(metricsMiddleware);
-
-// Health check endpoint
+// -------------------------------
+// HEALTH CHECK
+// -------------------------------
 app.get('/health', (req, res) => {
-  res.status(200).json({ 
+  res.status(200).json({
     status: 'healthy',
-    service: 'transaction-validator-v1',
+    service: 'transaction-validator-v2',
     timestamp: new Date().toISOString()
   });
 });
 
-// 404 handler
+// -------------------------------
+// 404 HANDLER
+// -------------------------------
 app.use((req, res) => {
-  res.status(404).json({ error: 'Route not found' });
+  res.status(404).json({
+    success: false,
+    error: 'Not Found',
+    message: `Route ${req.originalUrl} not found`
+  });
 });
 
-// Error handler (debe ser el último middleware)
+// -------------------------------
+// ERROR HANDLER
+// -------------------------------
 app.use(errorHandler);
 
 module.exports = app;

@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: transaction-validator
+spec:
+  type: NodePort
+  ports:
+    - port: 3000       # puerto interno del cluster
+      targetPort: 3000 # puerto del pod
+      nodePort: 30001  # puerto del host, distinto de Grafana
+  selector:
+    app: transaction-validator
+    version: blue       # versión activa inicial
