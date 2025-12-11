@@ -62,17 +62,7 @@ jobs:
       - name: Install Render CLI
         run: |
           curl -sL https://cli.render.com/install | bash
-          # 1. Asegura que el binario esté en el PATH del shell actual
-          export PATH=$HOME/.render/bin:$PATH
-          
-          # 2. Encuentra la ubicación exacta del comando 'render'
-          RENDER_CLI_PATH=$(which render)
-          
-          # 3. Muestra la ubicación (para depuración)
-          echo "Render CLI encontrado en: $RENDER_CLI_PATH"
-          
-          # 4. Exporta la variable para los pasos siguientes (Output Variable)
-          echo "RENDER_CLI_PATH=$RENDER_CLI_PATH" >> $GITHUB_OUTPUT
+          echo "$HOME/.render/bin" >> $GITHUB_PATH
 
       # 9. Build Docker image
       - name: Build Docker image
@@ -84,13 +74,11 @@ jobs:
         if: ${{ success() }}
         env:
           RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
-        # Aquí forzamos el PATH para que el script encuentre 'render'
-        run: PATH=$HOME/.render/bin:$PATH bash ./scripts/deploy.sh
+        run: bash ./scripts/deploy.sh
 
       # 11. Rollback in case of test failure
       - name: Rollback Render
         if: ${{ failure() }}
         env:
           RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
-        # Aquí forzamos el PATH para que el script encuentre 'render'
-        run: PATH=$HOME/.render/bin:$PATH bash ./scripts/rollback.sh
+        run: bash ./scripts/rollback.sh
